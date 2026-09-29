@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "clients": {
+    "webui": {
+      "label": "MatFlow WebUI",
+      "working_directory": "apps/webui",
+      "command": ["npm", "run", "dev", "--", "--host", "127.0.0.1", "--port", "{ui_port}"],
+      "environment": {
+        "VITE_MATFLOW_API_URL": "{api_url}"
+      },
+      "url": "{ui_origin}",
+      "health_url": "{ui_origin}"
+    }
+  }
+}

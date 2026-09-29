@@ -12,7 +12,7 @@ not provide by itself:
 Install and verify the dedicated profile with:
 
 ```powershell
-uv run matflow configure-dsh --profile matflow
-uv run matflow diagnose --dsh
-uv run matflow start-dsh
+npm run configure:dsh
+npm run mcp
+dsh --profile matflow
 ```

@@ -1,15 +1,14 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import { createMatflowClient } from '@matflow/api-client';
 import WorkflowEditor from './WorkflowEditor.jsx';
 import './style.css';
 
 const API = (import.meta.env.VITE_MATFLOW_API_URL ?? 'http://127.0.0.1:8000/api').replace(/\/$/, '');
+const apiClient = createMatflowClient(API);
 
 async function request(path, options = {}) {
-  const response = await fetch(`${API}${path}`, options);
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(payload.detail ?? 'The MatFlow service could not complete this request.');
-  return payload;
+  return apiClient.request(path, options);
 }
 
 function uniqueTaskId() {
@@ -150,7 +149,8 @@ function App() {
   async function refreshControlPlane() {
     setStatus({ kind: 'loading', message: '正在刷新服务端状态…' });
     try {
-      const [nextState, nextCapabilities, nextDatasets, nextProviders] = await Promise.all([request('/state'), request('/capabilities'), request('/uploads'), request('/model-providers')]);
+      const nextCapabilities = await apiClient.capabilities();
+      const [nextState, nextDatasets, nextProviders] = await Promise.all([request('/state'), request('/uploads'), request('/model-providers')]);
       setState(nextState);
       setCapabilities(nextCapabilities);
       setDatasets(nextDatasets.files ?? []);

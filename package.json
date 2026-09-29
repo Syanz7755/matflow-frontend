@@ -1,0 +1,23 @@
+{
+  "name": "matflow-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "integrations/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace @matflow/webui",
+    "build": "npm run build --workspace @matflow/webui",
+    "test": "npm run test:unit --workspace @matflow/api-client && npm run test --workspace @matflow/mcp-bridge && npm run test:unit --workspace @matflow/webui",
+    "test:e2e": "npm run test:e2e --workspace @matflow/webui",
+    "mcp": "npm run start --workspace @matflow/mcp-bridge",
+    "configure:dsh": "node scripts/configure-dsh.mjs",
+    "smoke:mcp": "node scripts/smoke-mcp.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,6 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const frontendPort = Number(process.env.MATFLOW_E2E_FRONTEND_PORT ?? 5173);
+const backendRoot = process.env.MATFLOW_BACKEND_ROOT ?? '../../../matflow';
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -15,12 +16,12 @@ export default defineConfig({
   },
   webServer: [
     {
-      command: 'uv run python -m uvicorn backend.main:app --host 127.0.0.1 --port 8001',
-      cwd: '..',
+      command: '.venv\\Scripts\\python.exe -m uvicorn backend.main:app --host 127.0.0.1 --port 8001',
+      cwd: backendRoot,
       url: 'http://127.0.0.1:8001/docs',
       env: {
         MATFLOW_CORS_ORIGINS: `http://127.0.0.1:${frontendPort}`,
-        MATFLOW_DATA_ROOT: 'frontend/test-results/runtime',
+        MATFLOW_DATA_ROOT: '../matflow-frontend/apps/webui/test-results/runtime',
         MATFLOW_ALLOW_MODEL_MOCK: '1',
         MATFLOW_REVISION_MOCK_JSON: JSON.stringify({
           label: 'AI revised input',
