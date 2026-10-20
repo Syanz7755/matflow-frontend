@@ -14,11 +14,17 @@ The WebUI is a research workbench driven by the backend's typed workflow graph:
 
 ## Screenshots
 
-Placeholders, to be captured from a running backend + WebUI (see the backend's `docs/images/README.md` for the capture notes):
+Captured on 2026-10-20 from a running backend + WebUI with a fresh save: the offline **MgO QE replay
+demo** (historical replay — no `pw.x`, Slurm job or LLM planning produced these frames) and its
+post-run human-review gate.
 
 ![Workbench overview](docs/images/workbench-overview.png)
 ![Workflow graph](docs/images/workflow-graph.png)
 ![Task result](docs/images/task-result.png)
+![Node review gate](docs/images/node-review-gate.png)
+
+The backend-side acceptance evidence and capture notes are in the backend repository's
+[acceptance report](https://github.com/Syanz7755/matflow/blob/acceptance/2026-10-20-demo/docs/acceptance/2026-10-20/REPORT.zhcn.md).
 
 ## Install and run
 

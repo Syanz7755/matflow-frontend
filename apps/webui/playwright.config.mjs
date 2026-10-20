@@ -2,6 +2,12 @@ import { defineConfig, devices } from '@playwright/test';
 
 const frontendPort = Number(process.env.MATFLOW_E2E_FRONTEND_PORT ?? 5173);
 const backendRoot = process.env.MATFLOW_BACKEND_ROOT ?? '../../../matflow';
+// The backend virtualenv layout depends on the platform: Windows keeps the
+// interpreter under .venv\Scripts, POSIX under .venv/bin.  Hard-coding the
+// Windows path made the webServer command fail on Linux/macOS (and in CI).
+// MATFLOW_E2E_PYTHON overrides both, e.g. for a conda or system interpreter.
+const backendPython = process.env.MATFLOW_E2E_PYTHON
+  ?? (process.platform === 'win32' ? '.venv\\Scripts\\python.exe' : '.venv/bin/python');
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -16,7 +22,7 @@ export default defineConfig({
   },
   webServer: [
     {
-      command: '.venv\\Scripts\\python.exe -m uvicorn backend.main:app --host 127.0.0.1 --port 8001',
+      command: `${backendPython} -m uvicorn backend.main:app --host 127.0.0.1 --port 8001`,
       cwd: backendRoot,
       url: 'http://127.0.0.1:8001/docs',
       env: {
@@ -29,7 +35,7 @@ export default defineConfig({
         MATFLOW_REVISION_MOCK_JSON: JSON.stringify({
           label: 'AI revised input',
           description: 'Imports the selected dataset with a reviewed, bounded table preview.',
-          params: { file_name: 'measurement.csv', upload_id: '' },
+          params: { file_name: 'sample-eis.csv', upload_id: '' },
           preview_spec: { version: '1.0', outputs: { raw: { renderer: 'table_head', max_rows: 5 } } },
           generated_code: null,
         }),

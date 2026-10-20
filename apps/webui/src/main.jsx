@@ -270,7 +270,15 @@ function App() {
       });
       setState((current) => ({ ...current, state: outcome.state }));
       const failed = outcome.results?.some((item) => item.error);
-      setStatus({ kind: failed ? 'error' : 'ready', message: failed ? 'The workflow stopped at an error' : 'Workflow run complete' });
+      // The backend reports `stopped` for a stop decision but leaves it false
+      // when a run halts at a review gate, so trust the node states it returns.
+      const pausedForReview = !failed && (outcome.stopped === true || (outcome.state?.nodes ?? []).some((node) => node.status === 'waiting'));
+      setStatus({
+        kind: failed ? 'error' : pausedForReview ? 'attention' : 'ready',
+        message: failed
+          ? 'The workflow stopped at an error'
+          : pausedForReview ? 'The workflow paused for human review' : 'Workflow run complete',
+      });
       return outcome;
     } finally {
       setBusy(false);
