@@ -1,68 +1,68 @@
-# MatFlow v0.2 研究工作台：设计简报
+# MatFlow v0.2 research workbench: design brief
 
-## 这版要解决的问题
+## What this version solves
 
-材料学研究人员需要先看懂一次任务的**输入、工具决策、结果与处理建议**，再逐步编辑工作流。第一版 UI 不把空画布伪装成完整的科学自动化系统，也不在浏览器中复刻路由或验证规则。
+A materials-science researcher needs to understand a task's **input, tool decision, result and handling advice** before editing the workflow step by step. The first UI version does not disguise an empty canvas as a complete scientific automation system, and it does not reimplement routing or validation rules in the browser.
 
-## 首个可交付切片
+## First deliverable slice
 
-用户可以：
+The user can:
 
-1. 阅读服务端确认的 GraphState 和注册工具；
-2. 输入研究任务，并选择已拥有的数据类型；
-3. 看到后端给出的候选、选中工具的 `registered_id`、理由、是否需要人工确认；
-4. 在同一界面阅读包含原始 prompt 的审计摘要。
+1. Read the server-confirmed GraphState and the registered tools;
+2. Enter a research task and select the data types they already have;
+3. See the backend's candidates, the `registered_id` of the selected tool, the rationale, and whether human confirmation is required;
+4. Read an audit summary containing the original prompt in the same interface.
 
-这条切片的唯一数据真相是 `GET /api/state`、`GET /api/capabilities`、`POST /api/route` 和 `GET /api/task-summaries/{task_id}`。图编辑、执行、事件流、取消和重试将在各自后端契约稳定后加入。
+The only source of truth for this slice is `GET /api/state`, `GET /api/capabilities`, `POST /api/route` and `GET /api/task-summaries/{task_id}`. Graph editing, execution, event streaming, cancellation and retry will be added once their respective backend contracts are stable.
 
-## 视觉方向
+## Visual direction
 
-界面是“实验记录台”，不是黑色终端，也不是游戏化节点画布。它以实验室笔记的纸白为主要表面，用深靛蓝承载导航与操作，铜绿色只表达已经被服务端确认的正常状态。最重要的内容是用户刚提交的研究问题与后端给出的下一步，而不是装饰性的大数据指标。
+The interface is a "lab bench record", not a black terminal and not a gamified node canvas. Its primary surface is lab-notebook paper white, deep indigo carries navigation and actions, and verdigris expresses only a normal state already confirmed by the server. The most important content is the research question the user just submitted and the next step the backend proposes, not decorative dashboard metrics.
 
-### Token 草案
+### Draft tokens
 
-| 角色 | 色值 | 用途 |
+| Role | Value | Use |
 | --- | --- | --- |
-| Paper | `#F5F7F5` | 页面背景，带极轻的绿灰色调 |
-| Surface | `#FFFFFF` | 可阅读的工作区 |
-| Ink | `#182537` | 主要文字与标题 |
-| Indigo | `#244B78` | 主操作、键盘焦点、结构层级 |
-| Verdigris | `#19756B` | 已确认/完成状态 |
-| Copper | `#A85C2D` | 人工确认与需要注意的状态 |
+| Paper | `#F5F7F5` | page background with a very light green-grey tint |
+| Surface | `#FFFFFF` | the readable work area |
+| Ink | `#182537` | primary text and headings |
+| Indigo | `#244B78` | primary actions, keyboard focus, structural hierarchy |
+| Verdigris | `#19756B` | confirmed/complete states |
+| Copper | `#A85C2D` | human confirmation and states needing attention |
 
-字体使用 `IBM Plex Sans`（中英文正文与操作）和 `IBM Plex Mono`（稳定 ID、版本与 trace）。圆角克制为 8px；不使用无意义的渐变、玻璃拟态或持续动效。
+Typography uses `IBM Plex Sans` (body text and controls) and `IBM Plex Mono` (stable IDs, versions and traces). Corner radius is restrained to 8px; no meaningless gradients, glassmorphism or continuous animation.
 
-## 布局
+## Layout
 
-桌面端以一个可收起的证据侧栏和一块主工作区组织内容：
+On desktop the content is organized as a collapsible evidence sidebar plus one main work area:
 
 ```text
 ┌──────────────────────────────────────────────────────────┐
-│ MatFlow / Research workbench     服务连接 / Graph vN      │
+│ MatFlow / Research workbench     connection / Graph vN     │
 ├───────────────────┬──────────────────────────────────────┤
-│ 当前图与工具注册表 │ 研究任务                               │
-│ （证据侧栏）       │  prompt + 数据类型 → 路由              │
-│                   │                                      │
-│                   │  决策记录 / 审计摘要                    │
+│ current graph and │ research task                        │
+│ tool registry     │  prompt + data types → routing        │
+│ (evidence         │                                      │
+│  sidebar)         │  decision record / audit summary      │
 └───────────────────┴──────────────────────────────────────┘
 ```
 
-窄屏时变为单列，任务输入和决策记录优先，证据侧栏折叠在其后。所有状态均有文字和图标/边框提示，不能只靠颜色。
+On narrow screens it becomes a single column, with task input and decision record first and the evidence sidebar collapsed behind them. Every state carries a text and icon/border cue and never relies on colour alone.
 
-## 可访问性基线
+## Accessibility baseline
 
-- 一个 `h1` 和一个 `main` landmark；首个键盘停靠点是“跳到主内容”。
-- 所有表单控件都有可见标签，所有动态的路由状态通过常驻 `aria-live` 区域播报。
-- 焦点可见、触控区域至少 44px、文字/组件对比度满足 WCAG AA。
-- 仅保留动作反馈动效，并支持 `prefers-reduced-motion`。
+- One `h1` and one `main` landmark; the first keyboard stop is "skip to main content".
+- Every form control has a visible label, and every dynamic routing state is announced through a permanent `aria-live` region.
+- Focus is visible, touch targets are at least 44px, and text/component contrast meets WCAG AA.
+- Only action-feedback animation is kept, and `prefers-reduced-motion` is supported.
 
-## 验收 seam
+## Acceptance seam
 
-Playwright 通过浏览器验证用户可见结果，并只经下列 HTTP interface 交互：
+Playwright verifies user-visible results through a browser and interacts only through these HTTP interfaces:
 
 - `GET /api/state`
 - `GET /api/capabilities`
 - `POST /api/route`
 - `GET /api/task-summaries/{task_id}`
 
-首个端到端场景：输入“Run basic EIS quality checks”，选择 `TypedTable`，界面显示服务端选择的 `eis_basic_qc` 及原始 prompt。
+First end-to-end scenario: enter "Run basic EIS quality checks", select `TypedTable`, and the interface shows the server-selected `eis_basic_qc` plus the original prompt.

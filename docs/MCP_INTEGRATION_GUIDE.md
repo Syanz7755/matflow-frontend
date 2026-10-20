@@ -1,23 +1,23 @@
-# MatFlow MCP 与 DSH 集成
+# MatFlow MCP and DSH integration
 
-MCP bridge 是独立 Node 服务，默认监听 `http://127.0.0.1:8001/mcp`。它只调用后端 HTTP API，不导入 Python 后端代码，也不直接访问工作区文件。
+The MCP bridge is a standalone Node service that listens on `http://127.0.0.1:8001/mcp` by default. It only calls the backend HTTP API: it does not import Python backend code and does not access workspace files directly.
 
-## 启动
+## Startup
 
-先在后端仓库启动服务：
+Start the service in the backend repository first:
 
 ```powershell
 uv run matflow start --ui none
 ```
 
-再在本仓库启动 bridge：
+Then start the bridge in this repository:
 
 ```powershell
 npm install
 npm run mcp
 ```
 
-可通过 `MATFLOW_API_URL`、`MATFLOW_MCP_HOST` 与 `MATFLOW_MCP_PORT` 覆盖默认地址。`MATFLOW_API_URL` 应包含 `/api`。
+`MATFLOW_API_URL`, `MATFLOW_MCP_HOST` and `MATFLOW_MCP_PORT` override the default addresses. `MATFLOW_API_URL` should include `/api`.
 
 ## DSH
 
@@ -25,13 +25,13 @@ npm run mcp
 npm run configure:dsh
 ```
 
-生成的 profile 指向新 bridge。受控本地文件导入由 DSH 适配层完成；远程文件只允许公共 HTTPS 地址，bridge 会检查重定向、拒绝私网目标并限制为 25 MB，内容最终经后端上传 API 落盘。
+The generated profile points at the new bridge. Controlled local file import is handled by the DSH adapter; remote files are allowed only from public HTTPS addresses, and the bridge checks redirects, rejects private-network targets and enforces the 25 MB limit before the content finally lands through the backend upload API.
 
-## 兼容性
+## Compatibility
 
-bridge 启动时读取 `/api/capabilities`，要求 `matflow-http >=1.0 <2.0`。工具返回保持 `{ok,data,error}` 形状，并保留迁移前的工具名称与审批注解。
+The bridge reads `/api/capabilities` at startup and requires `matflow-http >=1.0 <2.0`. Tool returns keep the `{ok,data,error}` shape and preserve the pre-migration tool names and approval annotations.
 
-## 验证
+## Verification
 
 ```powershell
 npm test
