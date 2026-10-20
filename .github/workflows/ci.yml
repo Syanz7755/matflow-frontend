@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+
+  # TODO: end-to-end tests need the Python backend. Once the backend repository
+  # is public, check it out next to this one and run Playwright, e.g.:
+  #   - uses: actions/checkout@v4
+  #     with: { repository: Syanz7755/matflow, path: ../matflow }
+  #   - install uv, create the backend .venv, `npx playwright install chromium`
+  #   - MATFLOW_BACKEND_ROOT=../matflow npm run test:e2e
+  # (playwright.config.mjs launches the backend via .venv\Scripts\python.exe,
+  # a Windows path; use a windows-latest runner or make that command portable.)
