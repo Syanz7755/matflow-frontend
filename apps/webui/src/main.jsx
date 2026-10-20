@@ -98,6 +98,12 @@ function DecisionRecord({ summary }) {
 
   const selected = summary.decision?.selected_tools ?? [];
   const candidates = summary.decision?.candidate_tools ?? [];
+  const opinions = summary.decision?.model_opinions ?? [];
+  const models = [...new Set(opinions.map((item) => item.model).filter(Boolean))];
+  const routerLabel = /^\[(llm|jev|consensus|rule)/.exec(summary.decision?.rationale ?? '')?.[1]
+    ?? (opinions.length ? opinions.map((item) => item.profile).filter(Boolean).join(' + ') : 'unknown');
+  const confidence = summary.decision?.confidence;
+  const calibrated = opinions.some((item) => item.calibrated === true);
   const waiting = summary.status === 'waiting_for_confirmation';
   return (
     <section className="decision-panel" aria-labelledby="decision-heading">
@@ -111,6 +117,15 @@ function DecisionRecord({ summary }) {
         <div><dt>Task ID</dt><dd>{summary.task_id}</dd></div>
         <div><dt>Trace ID</dt><dd>{summary.trace_id}</dd></div>
         <div><dt>Graph version</dt><dd>v{summary.input_context?.graph_version ?? '—'}</dd></div>
+        <div><dt>Decision source</dt><dd>{routerLabel}</dd></div>
+        <div><dt>Model</dt><dd>{models.length ? models.join(' + ') : 'not recorded'}</dd></div>
+        <div>
+          <dt>Confidence</dt>
+          <dd>
+            {typeof confidence === 'number' ? `${Math.round(confidence * 100)}%` : 'not recorded'}
+            {typeof confidence === 'number' && <small className="fact-note">{calibrated ? 'calibrated' : 'model self-reported, not calibrated'}</small>}
+          </dd>
+        </div>
       </dl>
 
       <div className="prompt-evidence"><span>User prompt</span><p>{summary.user_prompt}</p></div>
@@ -122,7 +137,7 @@ function DecisionRecord({ summary }) {
         </div>
         <div>
           <h3>Candidate retrieval</h3>
-          {candidates.length ? <ul className="candidate-list">{candidates.map((tool) => <li key={tool.registered_id}><code>{tool.registered_id}</code><span>{Math.round((tool.retrieval_score ?? 0) * 100)}% match</span></li>)}</ul> : <p className="muted">No candidate matched.</p>}
+          {candidates.length ? <ul className="candidate-list">{candidates.map((tool) => <li key={tool.registered_id}><code>{tool.registered_id}</code><span title="Type-filter compatibility score, not semantic accuracy">compatibility {Number(tool.retrieval_score ?? 0).toFixed(2)}</span>{tool.reasons?.length ? <small className="candidate-reason">{tool.reasons.join(' · ')}</small> : null}</li>)}</ul> : <p className="muted">No candidate matched.</p>}
         </div>
       </div>
 
@@ -346,7 +361,7 @@ function App() {
         <a className="brand" href="#main-content" aria-label="MatFlow research workbench home"><span className="brand-mark" aria-hidden="true">M</span><span><strong>MatFlow</strong><small>materials research agent</small></span></a>
         <div className={`connection connection-${status.kind}`} role="status" aria-live="polite"><span aria-hidden="true" />{status.message}</div>
         <nav className="topbar-actions" aria-label="Research workbench actions">
-          <button type="button" onClick={runQeDemo} disabled={busy}>Run MgO QE replay demo</button>
+          <button type="button" onClick={runQeDemo} disabled={busy || Boolean(graph?.nodes?.length || graph?.edges?.length)} title={graph?.nodes?.length || graph?.edges?.length ? 'The QE replay demo needs an empty workspace; clear the workflow first.' : 'Build and run the pinned MgO QE replay demo.'}>Run MgO QE replay demo</button>
           <button type="button" onClick={() => setActiveDialog('task')}>Route a research task</button>
           <button type="button" onClick={() => setActiveDialog('decision')}>Decision record</button>
         </nav>
@@ -362,7 +377,7 @@ function App() {
           <label htmlFor={questionId}>Research question <span className="label-hint">natural language</span></label>
           <textarea id={questionId} aria-label="Research question" value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="For example: run basic EIS quality checks on normalized impedance spectra" rows="4" required />
           <fieldset><legend>Available input types</legend><div className="input-type-grid">{dataTypes.map((type) => <label key={type} className="type-option"><input type="checkbox" checked={inputTypes.includes(type)} onChange={() => toggleInputType(type)} /><span>{type}</span></label>)}</div></fieldset>
-          <div className="task-actions"><p>Normal routing only records a decision. The QE replay demo builds and runs an MgO workflow from archived QE output and does not submit a Slurm job.</p><button type="button" onClick={runQeDemo} disabled={busy}>{busy ? 'Building workflow…' : 'Run MgO QE replay demo'}</button><button type="submit" disabled={busy || !question.trim() || !state}>{busy ? 'Routing…' : 'Get routing decision'}</button></div>
+          <div className="task-actions"><p>Normal routing only records a decision. The QE replay demo builds and runs an MgO workflow from archived QE output and does not submit a Slurm job.</p><button type="button" onClick={runQeDemo} disabled={busy || Boolean(graph?.nodes?.length || graph?.edges?.length)} title={graph?.nodes?.length || graph?.edges?.length ? 'The QE replay demo needs an empty workspace; clear the workflow first.' : 'Build and run the pinned MgO QE replay demo.'}>{busy ? 'Building workflow…' : 'Run MgO QE replay demo'}</button><button type="submit" disabled={busy || !question.trim() || !state}>{busy ? 'Routing…' : 'Get routing decision'}</button></div>
         </form>
       </ModalDialog>}
       {activeDialog === 'decision' && <ModalDialog labelledBy="decision-heading" onClose={() => setActiveDialog(null)} className="decision-dialog">

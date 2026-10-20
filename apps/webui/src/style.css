@@ -145,3 +145,8 @@ form { margin-top:27px; } form > label, legend { display:block; color:#314155; f
 .qe-result-preview dd { margin: 0; font-weight: 650; overflow-wrap: anywhere; }
 .node-execution-error { padding: .8rem; border: 1px solid #c85847; border-radius: .5rem; background: #fff2ef; color: #742b23; }
 .node-execution-error p { margin: .35rem 0 0; }
+
+/* Live acceptance 2026-10-20: decision-record provenance and candidate reasons. */
+.fact-note { display:block; margin-top:3px; color:var(--muted); font:10px 'IBM Plex Mono',monospace; white-space:normal; }
+.candidate-list li { flex-wrap:wrap; }
+.candidate-reason { flex-basis:100%; color:#51606b; font-size:11px; }
