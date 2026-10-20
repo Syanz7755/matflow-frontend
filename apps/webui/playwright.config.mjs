@@ -21,7 +21,10 @@ export default defineConfig({
       url: 'http://127.0.0.1:8001/docs',
       env: {
         MATFLOW_CORS_ORIGINS: `http://127.0.0.1:${frontendPort}`,
-        MATFLOW_DATA_ROOT: '../matflow-frontend/apps/webui/test-results/runtime',
+        // The backend owns its runtime data, so it lives under the backend
+        // checkout. It used to sit in this repo's test-results/ directory, which
+        // Playwright wipes on every run, so each beforeEach reset failed.
+        MATFLOW_DATA_ROOT: '.tmp/e2e-runtime',
         MATFLOW_ALLOW_MODEL_MOCK: '1',
         MATFLOW_REVISION_MOCK_JSON: JSON.stringify({
           label: 'AI revised input',
