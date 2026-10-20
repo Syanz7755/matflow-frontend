@@ -89,6 +89,20 @@ test('renders a server graph with a separate connection point for every typed po
   expect(Math.abs(geometry.outputCenter - geometry.nodeBox.right)).toBeLessThanOrEqual(1);
 });
 
+test('runs the MgO QE workflow from a natural-language request and labels the archived replay', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Run MgO QE replay demo' }).click();
+  const canvas = page.getByTestId('workflow-canvas');
+  await expect(canvas.getByLabel('MgO structure workflow node')).toBeVisible();
+  await expect(canvas.getByLabel('Generate QE SCF input workflow node')).toContainText('Completed');
+  await expect(canvas.getByLabel('Archived output replay workflow node')).toContainText('Completed');
+  await expect(canvas.getByLabel('Parse QE result workflow node')).toContainText('Completed');
+  await expect(page.locator('.qe-result-preview')).toContainText('Historical output replay');
+  await expect(page.locator('.qe-result-preview')).toContainText('-2417.17683284 Ry');
+  await expect(page.locator('.qe-result-preview')).toContainText('9.7133 eV');
+  await expect(page.locator('.connection')).toContainText('no Slurm job submitted');
+});
+
 test('researcher can build, save, export, and run a workflow from the editor', async ({ page }) => {
   await page.goto('/');
   await page.getByLabel('Import dataset').setInputFiles({

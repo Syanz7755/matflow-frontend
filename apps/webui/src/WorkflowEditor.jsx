@@ -92,6 +92,13 @@ function downloadWorkflow(graph) {
 
 function PreviewPanel({ preview }) {
   if (!preview) return <p className="muted">Run this node to create a bounded preview.</p>;
+  if (preview.data?.kind === 'QEResult') {
+    const result = preview.data;
+    return <section className="qe-result-preview" aria-label="Quantum ESPRESSO result">
+      {result.provenance === 'historical_output_replay' && <span className="state-badge state-attention">Historical output replay · Slurm not submitted</span>}
+      <dl><div><dt>Convergence</dt><dd>{result.convergence}</dd></div><div><dt>Total energy</dt><dd>{result.energy?.value} {result.energy?.unit}</dd></div><div><dt>Fermi energy</dt><dd>{result.fermi_energy ? `${result.fermi_energy.value} ${result.fermi_energy.unit}` : 'Not present'}</dd></div><div><dt>SCF iterations</dt><dd>{result.iterations ?? 'Not present'}</dd></div><div><dt>Source</dt><dd>{result.source_path ?? result.source}</dd></div></dl>
+    </section>;
+  }
   if (preview.kind === 'table') {
     const columns = [...new Set((preview.rows ?? []).flatMap((row) => Object.keys(row ?? {})))];
     return <div className="preview-table-wrap"><table className="preview-table"><thead><tr>{columns.map((column) => <th key={column}>{column}</th>)}</tr></thead><tbody>{preview.rows.map((row, index) => <tr key={index}>{columns.map((column) => <td key={column}>{String(row?.[column] ?? '')}</td>)}</tr>)}</tbody></table></div>;
@@ -241,7 +248,7 @@ export default function WorkflowEditor({
     if (!graph) return;
     setDraft(clone(graph));
     setDirty(false);
-    setSelectedNodeId((current) => graph.nodes.some((node) => node.id === current) ? current : null);
+    setSelectedNodeId((current) => graph.nodes.some((node) => node.id === current) ? current : graph.nodes.find((node) => node.type === 'qe_parse_output')?.id ?? null);
   }, [graph]);
 
   useEffect(() => {
@@ -427,6 +434,7 @@ export default function WorkflowEditor({
           <div className="inspector-identity"><span>{selectedTool?.category}</span><strong>{selectedTool?.label}</strong><code>{selectedNode.type} · v{selectedNode.tool_version}</code></div>
           <div className="inspector-params"><h3>Parameters</h3>{Object.entries(selectedNode.params ?? {}).map(([name, value]) => <ParameterField key={name} name={name} value={value} datasets={datasets} dataTypes={dataTypes} onChange={(next) => updateParameter(name, next)} />)}</div>
           <section className="preview-panel"><h3>Progressive preview</h3><PreviewPanel preview={selectedNode.preview} /></section>
+          {selectedNode.status === 'error' && selectedNode.output?.error && <div className="node-execution-error" role="alert"><strong>{selectedNode.output.error.code ?? 'execution_failed'}</strong><p>{selectedNode.output.error.message ?? selectedNode.output.error}</p></div>}
           {selectedNode.status === 'waiting' && selectedNode.review_state?.status === 'pending' && <div className="decision-actions"><h3>{selectedNode.review_policy?.prompt ?? 'Review this result before continuing.'}</h3><button type="button" onClick={() => submitDecision('continue')} disabled={busy}>Continue</button><button type="button" onClick={() => setRevisionNodeId(selectedNode.id)} disabled={busy}>Revise node</button><button type="button" onClick={() => submitDecision('stop')} disabled={busy}>Stop run</button></div>}
           {selectedNode.output && <details className="node-output"><summary>Latest output</summary><pre>{JSON.stringify(selectedNode.output, null, 2)}</pre></details>}
           <button type="button" className="danger-button" onClick={() => removeNodes([selectedNode.id])}>Delete node</button>
@@ -498,7 +506,7 @@ export default function WorkflowEditor({
           />
           {connectMode && <div className="connect-helper" role="status">Select a compatible {connectMode.dataType} input <button type="button" onClick={() => setConnectMode(null)}>Cancel</button></div>}
           <div className="editor-notice" role="status" aria-live="polite"><span className={dirty ? 'draft-dot' : 'saved-dot'} aria-hidden="true" />{notice}</div>
-          {runResults.length > 0 && <details className="run-results"><summary>Latest workflow run</summary><ol aria-label="Latest workflow run">{runResults.map((item, index) => <li className={item.error ? 'run-error' : ''} key={`${item.node_id ?? 'run'}-${index}`}><strong>{item.node_id ?? 'Workflow'}</strong><span>{item.error ?? item.result?.kind ?? 'Completed'}</span></li>)}</ol></details>}
+          {runResults.length > 0 && <details className="run-results"><summary>Latest workflow run</summary><ol aria-label="Latest workflow run">{runResults.map((item, index) => <li className={item.error ? 'run-error' : ''} key={`${item.node_id ?? 'run'}-${index}`}><strong>{item.node_id ?? 'Workflow'}</strong><span>{item.error ? `${item.error_code ?? 'execution_failed'} · ${item.error}` : item.result?.kind ?? 'Completed'}</span></li>)}</ol></details>}
         </div>
 
         <aside className={`workbench-sidebar node-inspector ${drawer === 'right' ? 'drawer-open' : ''}`} aria-label="Node inspector">
