@@ -99,6 +99,10 @@ function DecisionRecord({ summary }) {
 
   const selected = summary.decision?.selected_tools ?? [];
   const candidates = summary.decision?.candidate_tools ?? [];
+  // Candidates come from the input-type gate only: the retriever does not score words,
+  // so every retrieval_score is 0 by design. Report that instead of printing 0.00,
+  // which reads like "nothing is compatible" (see backend/routing.py CandidateRetriever).
+  const typeGatedOnly = candidates.length > 0 && candidates.every((tool) => !Number(tool.retrieval_score ?? 0));
   const opinions = summary.decision?.model_opinions ?? [];
   const models = [...new Set(opinions.map((item) => item.model).filter(Boolean))];
   const routerLabel = /^\[(llm|jev|consensus|rule)/.exec(summary.decision?.rationale ?? '')?.[1]
@@ -137,8 +141,8 @@ function DecisionRecord({ summary }) {
           {selected.length ? <ul className="tool-list">{selected.map((tool) => <li key={tool.registered_id}><strong>{tool.label}</strong><code>{tool.registered_id}</code><span>v{tool.version}</span></li>)}</ul> : <p className="muted">No tool was selected automatically.</p>}
         </div>
         <div>
-          <h3>Candidate retrieval</h3>
-          {candidates.length ? <ul className="candidate-list">{candidates.map((tool) => <li key={tool.registered_id}><code>{tool.registered_id}</code><span title="Type-filter compatibility score, not semantic accuracy">compatibility {Number(tool.retrieval_score ?? 0).toFixed(2)}</span>{tool.reasons?.length ? <small className="candidate-reason">{tool.reasons.join(' · ')}</small> : null}</li>)}</ul> : <p className="muted">No candidate matched.</p>}
+          <h3>{typeGatedOnly ? 'Candidate pool (type-gated)' : 'Candidate retrieval'}</h3>
+          {candidates.length ? <ul className="candidate-list">{candidates.map((tool) => <li key={tool.registered_id}><code>{tool.registered_id}</code><span title={typeGatedOnly ? 'Admitted by the input-type gate; the routing model scores the decision, not the candidates' : 'Type-filter compatibility score, not semantic accuracy'}>{typeGatedOnly ? 'type-gated' : `compatibility ${Number(tool.retrieval_score ?? 0).toFixed(2)}`}</span>{tool.reasons?.length ? <small className="candidate-reason">{tool.reasons.join(' · ')}</small> : null}</li>)}</ul> : <p className="muted">No candidate matched.</p>}
         </div>
       </div>
 
