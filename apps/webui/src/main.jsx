@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { createMatflowClient } from '@matflow/api-client';
 import WorkflowEditor from './WorkflowEditor.jsx';
+import { qeDemoPrompt } from './qeDemoPrompt.mjs';
 import './style.css';
 
 const API = (import.meta.env.VITE_MATFLOW_API_URL ?? 'http://127.0.0.1:8000/api').replace(/\/$/, '');
@@ -206,7 +207,7 @@ function App() {
   }
 
   async function runQeDemo() {
-    const prompt = question.trim() || 'For pristine MgO 2x2x2, generate a QE SCF input and report convergence, total energy, and Fermi energy.';
+    const prompt = qeDemoPrompt(question);
     setBusy(true);
     setStatus({ kind: 'loading', message: 'Building the MgO QE replay workflow…' });
     try {

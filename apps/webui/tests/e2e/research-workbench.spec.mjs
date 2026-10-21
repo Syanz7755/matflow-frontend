@@ -149,10 +149,64 @@ test('researcher can build, save, export, and run a workflow from the editor', a
 
   await page.getByRole('button', { name: 'Run workflow from start' }).click();
   await expect(page.getByLabel('AI revised input workflow node')).toContainText('Waiting');
+  await expect(page.locator('.editor-notice')).toContainText('The workflow paused for human review.');
   await page.getByLabel('AI revised input workflow node').click();
   await expect(page.locator('.preview-table')).toBeVisible();
   await page.getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(page.getByLabel('EIS Basic Analysis workflow node')).toContainText('Completed');
+});
+
+test('researcher can select a single connection and remove it with Delete', async ({ page, request }) => {
+  const patch = await request.post('http://127.0.0.1:8001/api/patch', {
+    data: {
+      base_version: 0,
+      rationale: 'Edge selection fixture',
+      operations: [
+        { op: 'add_node', node: { id: 'import', type: 'raw_file_import', position: { x: 40, y: 120 } } },
+        { op: 'add_node', node: { id: 'normalize', type: 'normalize_columns', position: { x: 390, y: 120 } } },
+        { op: 'add_node', node: { id: 'qc', type: 'eis_basic_qc', position: { x: 740, y: 70 } } },
+        { op: 'connect', edge: { id: 'raw-table', source: 'import', source_port: 'raw', target: 'normalize', target_port: 'raw' } },
+        { op: 'connect', edge: { id: 'table-qc', source: 'normalize', source_port: 'table', target: 'qc', target_port: 'data' } },
+      ],
+    },
+  });
+  expect(patch.ok()).toBeTruthy();
+
+  await page.goto('/');
+  const canvas = page.getByTestId('workflow-canvas');
+  await expect(canvas.locator('.react-flow__edge')).toHaveCount(2);
+
+  // Drag the middle node far down so both connection segments are long enough to hit.
+  const middle = page.getByLabel('Normalize / Column Mapping workflow node');
+  const box = await middle.boundingBox();
+  expect(box).toBeTruthy();
+  await page.mouse.move(box.x + box.width / 2, box.y + 16);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width / 2 - 40, box.y + 300, { steps: 10 });
+  await page.mouse.up();
+  await expect(canvas.locator('.react-flow__edge')).toHaveCount(2);
+
+  // Clicking empty canvas clears the node selection, so Delete can only affect the edge.
+  const paneBox = await canvas.locator('.react-flow__pane').boundingBox();
+  expect(paneBox).toBeTruthy();
+  await page.mouse.click(paneBox.x + paneBox.width - 60, paneBox.y + paneBox.height - 60);
+  await expect(canvas.locator('.react-flow__edge.selected')).toHaveCount(0);
+
+  const point = await canvas.evaluate(() => {
+    const path = [...document.querySelectorAll('[data-testid="workflow-canvas"] .react-flow__edge-path')]
+      .map((item) => ({ item, length: item.getTotalLength() }))
+      .sort((a, b) => b.length - a.length)[0].item;
+    const middle2 = path.getPointAtLength(path.getTotalLength() * 0.5);
+    const matrix = path.getScreenCTM();
+    return { x: middle2.x * matrix.a + middle2.y * matrix.c + matrix.e, y: middle2.x * matrix.b + middle2.y * matrix.d + matrix.f };
+  });
+  await page.mouse.click(point.x, point.y);
+  await expect(canvas.locator('.react-flow__edge.selected')).toHaveCount(1);
+
+  await page.keyboard.press('Delete');
+  await expect(canvas.locator('.react-flow__edge')).toHaveCount(1);
+  await expect(canvas.locator('article.workflow-node')).toHaveCount(3);
+  await expect(page.locator('.editor-notice')).toContainText('Connection removed from the draft.');
 });
 
 test('researcher can import a portable workflow JSON file and save it', async ({ page }) => {

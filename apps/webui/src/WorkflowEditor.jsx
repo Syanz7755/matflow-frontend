@@ -232,6 +232,7 @@ export default function WorkflowEditor({
 }) {
   const [draft, setDraft] = useState(() => clone(graph ?? { version: 0, nodes: [], edges: [] }));
   const [selectedNodeId, setSelectedNodeId] = useState(null);
+  const [selectedEdgeId, setSelectedEdgeId] = useState(null);
   const [dirty, setDirty] = useState(false);
   const [search, setSearch] = useState('');
   const [notice, setNotice] = useState('Choose a tool to add the first node.');
@@ -249,10 +250,15 @@ export default function WorkflowEditor({
     setDraft(clone(graph));
     setDirty(false);
     setSelectedNodeId((current) => graph.nodes.some((node) => node.id === current) ? current : graph.nodes.find((node) => node.type === 'qe_parse_output')?.id ?? null);
+    setSelectedEdgeId(null);
   }, [graph]);
 
   useEffect(() => {
-    function cancelConnection(event) { if (event.key === 'Escape') { setConnectMode(null); setContextMenu(null); setDrawer(null); setRenameNodeId(null); } }
+    if (selectedEdgeId && !draft.edges.some((edge) => edge.id === selectedEdgeId)) setSelectedEdgeId(null);
+  }, [draft.edges, selectedEdgeId]);
+
+  useEffect(() => {
+    function cancelConnection(event) { if (event.key === 'Escape') { setConnectMode(null); setContextMenu(null); setDrawer(null); setRenameNodeId(null); setSelectedEdgeId(null); } }
     window.addEventListener('keydown', cancelConnection);
     return () => window.removeEventListener('keydown', cancelConnection);
   }, []);
@@ -350,6 +356,12 @@ export default function WorkflowEditor({
     setConnectMode(null);
   }
 
+  function selectEdge(edge) {
+    if (!edge) { setSelectedEdgeId(null); return; }
+    setSelectedEdgeId(edge.id);
+    setSelectedNodeId(null);
+  }
+
   function openNodeMenu(nodeId, point) {
     setSelectedNodeId(nodeId);
     setContextMenu({ nodeId, x: point.x ?? point.left, y: point.y ?? point.bottom });
@@ -385,7 +397,12 @@ export default function WorkflowEditor({
       if (dirty) await saveDraft();
       const outcome = await onRun({ restart: true });
       setRunResults(outcome.results ?? []);
-      setNotice(outcome.results?.some((item) => item.error) ? 'The run stopped at an error. Select the node to inspect it.' : 'Workflow run finished.');
+      const failed = outcome.results?.some((item) => item.error);
+      // A review gate pauses the run without an error, but the run did not finish either.
+      const paused = !failed && (outcome.state?.nodes ?? []).some((node) => node.status === 'waiting');
+      setNotice(failed
+        ? 'The run stopped at an error. Select the node to inspect it.'
+        : paused ? 'The workflow paused for human review.' : 'Workflow run finished.');
     } catch (error) {
       setNotice(error.message);
       onStatus({ kind: 'error', message: error.message });
@@ -492,7 +509,9 @@ export default function WorkflowEditor({
             editable
             showHeading={false}
             selectedNodeId={selectedNodeId}
+            selectedEdgeId={selectedEdgeId}
             onConnect={connect}
+            onEdgeSelect={selectEdge}
             onNodeClick={(_event, node) => setSelectedNodeId(node.id)}
             onPaneClick={() => setSelectedNodeId(null)}
             onNodesDelete={(nodes) => removeNodes(nodes.map((node) => node.id))}

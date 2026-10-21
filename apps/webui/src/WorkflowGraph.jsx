@@ -79,7 +79,9 @@ export default function WorkflowGraph({
   className = '',
   editable = false,
   selectedNodeId = null,
+  selectedEdgeId = null,
   onConnect,
+  onEdgeSelect,
   onNodeClick,
   onPaneClick,
   onNodesDelete,
@@ -111,6 +113,8 @@ export default function WorkflowGraph({
     },
   }));
 
+  const edges = useMemo(() => model.edges.map((edge) => ({ ...edge, selected: edge.id === selectedEdgeId })), [model.edges, selectedEdgeId]);
+
   return (
     <section className={`workflow-graph ${showHeading ? '' : 'workflow-graph-canvas-only'} ${className}`.trim()} aria-labelledby={showHeading ? 'workflow-graph-heading' : undefined}>
       {showHeading && <div className="workflow-graph-heading">
@@ -124,7 +128,7 @@ export default function WorkflowGraph({
       <div className="workflow-canvas" data-testid="workflow-canvas" role="region" aria-label="Directed workflow graph">
         <ReactFlow
             nodes={nodes}
-            edges={model.edges}
+            edges={edges}
             nodeTypes={nodeTypes}
             nodesDraggable={editable}
             nodesConnectable={editable}
@@ -136,10 +140,11 @@ export default function WorkflowGraph({
             elementsSelectable
             deleteKeyCode={editable ? ['Backspace', 'Delete'] : null}
             onConnect={onConnect}
-            onNodeClick={onNodeClick}
-            onPaneClick={onPaneClick}
+            onEdgeClick={(event, edge) => { event.stopPropagation(); onEdgeSelect?.(edge); }}
+            onNodeClick={(event, node) => { onEdgeSelect?.(null); onNodeClick?.(event, node); }}
+            onPaneClick={(event) => { onEdgeSelect?.(null); onPaneClick?.(event); }}
             onNodesDelete={onNodesDelete}
-            onEdgesDelete={onEdgesDelete}
+            onEdgesDelete={(deletedEdges) => { onEdgeSelect?.(null); onEdgesDelete?.(deletedEdges); }}
             onNodeDragStop={onNodeDragStop}
             onNodeContextMenu={onNodeContextMenu}
             defaultViewport={{ x: 16, y: 48, zoom: 0.78 }}
